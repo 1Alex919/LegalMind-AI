@@ -1,0 +1,95 @@
+[project]
+name = "legalmind"
+version = "0.1.0"
+description = "AI-powered legal document analysis with RAG, multi-agent system, and explainability"
+authors = [
+    {name = "Alex"}
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = {text = "MIT"}
+
+dependencies = [
+    # LLM & AI Core
+    "openai>=1.12",
+    "tiktoken>=0.5",
+
+    # LangChain Ecosystem
+    "langchain>=0.3",
+    "langchain-openai>=0.3",
+    "langchain-community>=0.3",
+    "langgraph>=0.2",
+
+    # Vector Store & Search
+    "chromadb>=0.5",
+    "rank-bm25>=0.2",
+
+    # Reranking
+    "flashrank>=0.2",
+
+    # Document Processing
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+
+    # RAG Evaluation
+    "ragas>=0.2",
+    "datasets>=2.16",
+
+    # API & Backend
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.1",
+
+    # Frontend
+    "streamlit>=1.31",
+    "plotly>=5.18",
+    "pandas>=2.2",
+
+    # Utilities
+    "python-dotenv>=1.0",
+    "loguru>=0.7",
+    "tenacity>=8.2",
+    "httpx>=0.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
+    "black>=24.1",
+    "ruff>=0.2",
+    "mypy>=1.8",
+]
+ollama = [
+    "ollama>=0.1",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

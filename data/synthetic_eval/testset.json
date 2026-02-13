@@ -1,0 +1,54 @@
+{
+  "samples": [
+    {
+      "question": "Who are the parties involved in this Non-Disclosure Agreement?",
+      "answer": "The parties involved are the County of Orange and Microsoft Corporation and its affiliates.",
+      "context": "This Non-Disclosure Agreement ('Agreement') is between County of Orange ('County') and Microsoft Corporation and its affiliates ('Microsoft') as indicated in the signature block below."
+    },
+    {
+      "question": "What is the expiration date of this Agreement?",
+      "answer": "This Agreement expires one hundred and eighty (180) days from the later of the two signature dates.",
+      "context": "Expiration Date of this Agreement: This Agreement expires one hundred and eighty (180) days from the later of the two signature dates above."
+    },
+    {
+      "question": "What is the limited purpose of this Agreement?",
+      "answer": "The limited purpose is participation in the County of Orange HRS Data Analytics Project \u2013 Phase I and development of the associated Enterprise-wide Business Intelligence Platform.",
+      "context": "Limited Purpose: Application of this Agreement is limited to the following transaction or other interaction between the parties: Participation in the County of Orange HRS Data Analytics Project \u2013 Phase I and development of the associated Enterprise-wide Business Intelligence Platform."
+    },
+    {
+      "question": "What type of information is classified as 'Confidential Information' under this Agreement?",
+      "answer": "'Confidential Information' includes non-public information, know-how, and trade secrets that are designated in writing as 'confidential' at the time of disclosure.",
+      "context": "'Confidential Information' is non-public information, know-how and trade secrets in any form that: A. Are designated in writing as 'confidential' at the time of their disclosure..."
+    },
+    {
+      "question": "For how long must Confidential Information be withheld after it is received?",
+      "answer": "Confidential Information must be withheld for five years after it is received, unless applicable law requires a longer period.",
+      "context": "Except as permitted above and unless otherwise required by applicable law or court order, neither Party will use or disclose the other\u2019s Confidential Information for five years after it is received."
+    },
+    {
+      "question": "What steps must each party take to protect the other\u2019s Confidential Information?",
+      "answer": "Each Party agrees to take reasonable steps to protect the other Party\u2019s Confidential Information, at least as protective as those they take to protect their own.",
+      "context": "Each Party agrees: To take reasonable steps to protect the other Party\u2019s Confidential Information. These steps must be at least as protective as those we take to protect our own Confidential Information of a similar nature."
+    },
+    {
+      "question": "Can either party disclose Confidential Information if required by law?",
+      "answer": "Yes, each Party may disclose the other\u2019s Confidential Information if required to comply with a court order, law, or other government demand.",
+      "context": "Each Party may disclose the other\u2019s Confidential Information if required to comply with a court order, law, or other government demand that has the force of law..."
+    },
+    {
+      "question": "What law governs this Agreement?",
+      "answer": "This Agreement shall be governed by and construed under the laws of the State of California.",
+      "context": "This Agreement has been negotiated and executed in the State of California and shall be governed by and construed under the laws of the State of California..."
+    },
+    {
+      "question": "What happens if one party transfers this Agreement?",
+      "answer": "If one party transfers this Agreement, they will not disclose the other\u2019s Confidential Information to the transferee without the other\u2019s consent.",
+      "context": "If one of us transfers this Agreement, we will not disclose the other\u2019s Confidential Information to the transferee without the other\u2019s consent."
+    },
+    {
+      "question": "What is the venue for any legal action related to this Agreement?",
+      "answer": "The sole and exclusive venue shall be a court of competent jurisdiction located in Orange County, California.",
+      "context": "In the event of any legal action to enforce or interpret this Agreement, the sole and exclusive venue shall be a court of competent jurisdiction located in Orange County, California..."
+    }
+  ]
+}
