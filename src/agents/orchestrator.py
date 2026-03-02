@@ -79,7 +79,7 @@ def retrieve_context(state: AgentState) -> AgentState:
     else:
         query = question
 
-    retriever = Retriever(use_reranking=True, use_query_expansion=False, use_query_translation=True)
+    retriever = Retriever(use_reranking=True, use_query_expansion=True, use_query_translation=True)
     result = retriever.retrieve(query, k=settings.RETRIEVAL_TOP_K)
 
     context_parts = []

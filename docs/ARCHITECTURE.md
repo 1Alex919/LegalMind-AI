@@ -13,18 +13,18 @@ PDF/DOCX -> Loaders -> Parent-Child Chunker -> OpenAI Embeddings -> ChromaDB
 ```
 
 - **Loaders** (`src/ingestion/loaders.py`): Extract text from PDF (pypdf) and DOCX (python-docx). PDFs are split by page; DOCX by ~3000-char sections.
-- **Chunking** (`src/ingestion/chunking.py`): Parent-child strategy. Parent chunks (~1536 chars) provide broad context. Child chunks (~512 chars) are used for precise retrieval. Each child references its parent for context expansion.
-- **Embeddings** (`src/ingestion/embeddings.py`): OpenAI `text-embedding-3-small`. Batch processing (100 at a time). Deduplication by filename to avoid re-embedding.
+- **Chunking** (`src/ingestion/chunking.py`): Parent-child strategy with legal-aware separators (`Section`, `Article`, `Clause`, paragraphs, sentences). Parent chunks (~1536 chars, 384-char overlap) provide broad context. Child chunks (~512 chars, 192-char overlap) are used for precise retrieval. Each child references its parent for context expansion.
+- **Embeddings** (`src/ingestion/embeddings.py`): OpenAI `text-embedding-3-large`. Batch processing (100 at a time). Deduplication by filename to avoid re-embedding. Queries use an instruction-prefixed embedding (`Represent this legal question for retrieving relevant contract clauses: ...`) for asymmetric retrieval.
 
-### 2. Hybrid RAG Pipeline
+### 2. Hybrid RAG Pipeline (RRF + Query Expansion)
 
 ```
 Query -> [Query Expansion] -> BM25 + Vector Search -> Score Fusion -> Reranking -> Parent Context
 ```
 
-- **Hybrid Search** (`src/retrieval/hybrid_search.py`): Combines BM25 sparse retrieval with ChromaDB dense vector search. Scores are min-max normalized then combined with configurable alpha weight (default 0.6 vector / 0.4 BM25).
-- **Reranker** (`src/retrieval/reranker.py`): FlashRank (rank-T5-flan) reranks top candidates. Falls back to hybrid scores on failure.
-- **Query Expansion** (`src/retrieval/query_expansion.py`): HyDE generates hypothetical contract passages. Multi-query generates 3 alternative phrasings.
+- **Hybrid Search** (`src/retrieval/hybrid_search.py`): Combines BM25 sparse retrieval with ChromaDB dense vector search. Both ranked lists are merged via Reciprocal Rank Fusion (RRF) with configurable alpha weight (default 0.8 vector / 0.2 BM25).
+- **Reranker** (`src/retrieval/reranker.py`): FlashRank (rank-T5-flan) reranks top candidates and typically reduces ~20 retrieved candidates down to the top 3 high-precision chunks, dropping chunks below a configurable score threshold.
+- **Query Expansion** (`src/retrieval/query_expansion.py`): HyDE generates hypothetical contract passages; multi-query generates 3 alternative phrasings. All query variants are fused via cross-query RRF so chunks that appear for multiple variations are boosted.
 - **Parent Document Retrieval**: After finding relevant child chunks, fetches parent chunks from a separate collection for richer context.
 
 ### 3. Multi-Agent System
@@ -45,11 +45,12 @@ Every response includes:
 - **Confidence scoring**: Combines retrieval score mean, consistency, and LLM self-assessment
 - **Reasoning trace**: Step-by-step log of the pipeline with timing
 
-### 5. LLM Provider
+### 5. LLM Provider & Evaluation
 
-- **Primary**: OpenAI GPT-4o-mini with tenacity retry (exponential backoff, 3 attempts)
+- **Primary**: OpenAI GPT-4o-mini for generation (agents, orchestration).
 - **Fallback**: Ollama (local) via OpenAI-compatible API. Auto-detected at startup.
-- **Rate Limiting**: Sliding window (50 req/min). Blocks and waits when limit reached.
+- **RAGAS Judge**: OpenAI GPT-4o with `max_retries=10` and generous timeouts for stable evaluation.
+- **Rate Limiting / Reliability**: All evaluation calls are wrapped with exponential backoff. RAGAS runs in small batches (`batch_size=2`) to minimize rate-limit issues.
 
 ## Data Flow
 
@@ -63,11 +64,11 @@ Every response includes:
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Embedding model | text-embedding-3-small | Cost-effective, good quality |
-| Vector DB | ChromaDB (embedded) | No server needed, persistent |
-| Reranker | FlashRank | ~100MB vs ~560MB for BGE |
-| Chunking | Parent-child | Better context than flat chunking |
-| Agent framework | LangGraph | Explicit state graph, debuggable |
-| Score fusion | Weighted sum | Simple, effective, tunable |
+| Decision         | Choice                     | Rationale                                      |
+|------------------|----------------------------|------------------------------------------------|
+| Embedding model  | text-embedding-3-large     | Higher quality, better for legal semantics     |
+| Vector DB        | ChromaDB (embedded)        | No server needed, persistent                   |
+| Reranker         | FlashRank (rank-T5-flan)   | Lightweight reranker with good precision       |
+| Chunking         | Parent-child + legal splits| Better legal context than flat chunking        |
+| Agent framework  | LangGraph                  | Explicit state graph, debuggable               |
+| Score fusion     | RRF (BM25 + vectors)       | Robust to score scale differences, tunable α   |

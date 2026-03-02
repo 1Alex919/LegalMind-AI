@@ -36,16 +36,30 @@ def chunk_document(document: LoadedDocument) -> ChunkedDocument:
     Child chunks are used for precise embedding and search.
     Each child references its parent for context expansion.
     """
+    # Legal-aware separators: split on section boundaries, then paragraphs, then sentences
+    legal_separators = [
+        "\n\n\n",       # Triple newline (major section breaks)
+        "\n\n",         # Double newline (paragraph/clause breaks)
+        "\nSection ",   # Numbered sections
+        "\nArticle ",   # Article headings
+        "\nClause ",    # Clause headings
+        "\n",           # Single newline
+        "; ",           # Semicolon (common in legal enumerations)
+        ". ",           # Sentence boundary
+        " ",            # Word boundary
+        "",             # Character fallback
+    ]
+
     parent_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.CHUNK_SIZE * 3,
         chunk_overlap=settings.CHUNK_OVERLAP * 2,
-        separators=["\n\n", "\n", ". ", " ", ""],
+        separators=legal_separators,
     )
 
     child_splitter = RecursiveCharacterTextSplitter(
         chunk_size=settings.CHUNK_SIZE,
         chunk_overlap=settings.CHUNK_OVERLAP,
-        separators=["\n\n", "\n", ". ", " ", ""],
+        separators=legal_separators,
     )
 
     parent_chunks: list[Chunk] = []

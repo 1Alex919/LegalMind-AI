@@ -24,16 +24,17 @@ class QueryExpander:
                 {
                     "role": "system",
                     "content": (
-                        "Given the question, write a short hypothetical passage "
-                        "that would answer this question in the context of a "
-                        "legal contract. The passage should sound like it comes "
-                        "from an actual contract clause."
+                        "Given the question, write a hypothetical passage (2-3 sentences) "
+                        "that would answer this question as if it were taken directly from "
+                        "a legal contract or agreement. Use formal legal language, include "
+                        "specific terms and definitions that would appear in a real contract. "
+                        "Do NOT preface with any explanation — write ONLY the passage itself."
                     ),
                 },
                 {"role": "user", "content": query},
             ],
-            temperature=0.7,
-            max_tokens=200,
+            temperature=0.4,
+            max_tokens=250,
         )
 
         hypothetical = response.choices[0].message.content or ""

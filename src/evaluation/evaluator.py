@@ -29,6 +29,7 @@ def run_ragas_evaluation(
     answers: list[str],
     contexts: list[list[str]],
     ground_truths: list[str],
+    ground_truth_contexts: list[str] | None = None,
     output_path: str | Path | None = None,
 ) -> dict[str, float]:
     """Run RAGAS evaluation on provided data.
@@ -38,6 +39,8 @@ def run_ragas_evaluation(
         answers: List of generated answers.
         contexts: List of retrieved context lists (per question).
         ground_truths: List of ground truth answers.
+        ground_truth_contexts: List of ground truth context strings
+            (used for hit_rate/mrr). Falls back to ground_truths if not provided.
         output_path: Optional path to save results CSV.
 
     Returns:
@@ -70,12 +73,19 @@ def run_ragas_evaluation(
         )
 
     llm = LangchainLLMWrapper(
-        ChatOpenAI(model=judge_model, api_key=settings.OPENAI_API_KEY)
+        ChatOpenAI(
+            model=judge_model,
+            api_key=settings.OPENAI_API_KEY,
+            max_retries=10,
+            request_timeout=120,
+        )
     )
     embeddings = LangchainEmbeddingsWrapper(
         OpenAIEmbeddings(
             model=settings.OPENAI_EMBEDDING_MODEL,
             api_key=settings.OPENAI_API_KEY,
+            max_retries=10,
+            request_timeout=60,
         )
     )
 
@@ -86,24 +96,43 @@ def run_ragas_evaluation(
         ContextRecall(llm=llm),
     ]
 
-    result = evaluate(dataset=dataset, metrics=metrics)
+    logger.info(
+        f"Starting RAGAS with judge={judge_model}, "
+        f"max_retries=10, exponential backoff enabled"
+    )
+    result = evaluate(dataset=dataset, metrics=metrics, batch_size=2)
 
     # Extract scores from EvaluationResult
     scores = {}
+    import math
+
     if isinstance(result, dict):
         result_dict = result
     elif hasattr(result, "scores"):
         # RAGAS >= 0.2: .scores can be list[dict] or dict
         raw = result.scores
         if isinstance(raw, list):
-            # List of per-sample dicts — aggregate means
+            # List of per-sample dicts — aggregate means (skip NaN values)
             from collections import defaultdict
             agg = defaultdict(list)
-            for row in raw:
+            nan_counts: dict[str, int] = defaultdict(int)
+            for i, row in enumerate(raw):
                 if isinstance(row, dict):
                     for k, v in row.items():
                         if isinstance(v, (int, float)):
-                            agg[k].append(v)
+                            if math.isnan(v):
+                                nan_counts[k] += 1
+                                logger.warning(
+                                    f"Sample {i+1}: {k} = NaN "
+                                    f"(question: '{questions[i][:50]}...')"
+                                )
+                            else:
+                                agg[k].append(v)
+            if nan_counts:
+                logger.warning(
+                    f"NaN summary: {dict(nan_counts)} — "
+                    f"these samples were excluded from averages"
+                )
             result_dict = {k: sum(v) / len(v) for k, v in agg.items() if v}
         else:
             result_dict = raw
@@ -117,9 +146,10 @@ def run_ragas_evaluation(
         if isinstance(value, (int, float)):
             scores[key] = round(float(value), 4)
 
-    # Add custom metrics
-    scores["hit_rate"] = round(retrieval_hit_rate(contexts, ground_truths), 4)
-    scores["mrr"] = round(mean_reciprocal_rank(contexts, ground_truths), 4)
+    # Add custom metrics (compare retrieved contexts against ground truth contexts)
+    gt_ctx = ground_truth_contexts if ground_truth_contexts is not None else ground_truths
+    scores["hit_rate"] = round(retrieval_hit_rate(contexts, gt_ctx), 4)
+    scores["mrr"] = round(mean_reciprocal_rank(contexts, gt_ctx), 4)
 
     logger.info(f"RAGAS results: {scores}")
 
@@ -170,5 +200,6 @@ def evaluate_from_testset(
         answers=answers,
         contexts=contexts,
         ground_truths=ground_truths,
+        ground_truth_contexts=gt_contexts,
         output_path=output_path,
     )

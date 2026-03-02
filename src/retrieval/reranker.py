@@ -13,6 +13,7 @@ class ReRanker:
     def __init__(self) -> None:
         self.model_name = settings.RERANKER_MODEL
         self.top_n = settings.RERANKER_TOP_N
+        self.score_threshold = settings.RERANKER_SCORE_THRESHOLD
         self._ranker: Ranker | None = None
 
     def _get_ranker(self) -> Ranker:
@@ -49,17 +50,22 @@ class ReRanker:
 
             reranked_results = []
             for item in reranked[:top_n]:
+                score = float(item["score"])
+                if score < self.score_threshold:
+                    continue
                 reranked_results.append(
                     SearchResult(
                         chunk_id=item["id"],
                         text=item["text"],
-                        score=float(item["score"]),
+                        score=score,
                         metadata=item["meta"],
                     )
                 )
 
+            filtered = len(reranked[:top_n]) - len(reranked_results)
             logger.info(
-                f"Reranked {len(results)} results to top {len(reranked_results)}"
+                f"Reranked {len(results)} → {len(reranked_results)} results"
+                f"{f' ({filtered} below threshold {self.score_threshold})' if filtered else ''}"
             )
             return reranked_results
 

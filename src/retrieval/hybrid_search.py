@@ -9,8 +9,8 @@ from rank_bm25 import BM25Okapi
 from config.settings import settings
 from src.ingestion.embeddings import (
     get_chroma_client,
-    get_embedding_function,
     get_or_create_collection,
+    get_query_embedding_function,
 )
 
 
@@ -30,7 +30,7 @@ class HybridSearch:
     def __init__(self) -> None:
         self.client = get_chroma_client()
         self.collection = get_or_create_collection(self.client)
-        self.embeddings_fn = get_embedding_function()
+        self.embeddings_fn = get_query_embedding_function()
         self.alpha = settings.HYBRID_ALPHA  # vector weight
         self._bm25: BM25Okapi | None = None
         self._corpus_ids: list[str] = []
@@ -118,10 +118,16 @@ class HybridSearch:
             )
         return search_results
 
+    @staticmethod
+    def _rrf_score(rank: int, k: int = 60) -> float:
+        """Reciprocal Rank Fusion score: 1 / (k + rank)."""
+        return 1.0 / (k + rank)
+
     def search(self, query: str, k: int | None = None) -> list[SearchResult]:
         """Perform hybrid search combining BM25 and vector scores.
 
-        Final score = alpha * vector_score + (1 - alpha) * bm25_score
+        Uses Reciprocal Rank Fusion (RRF) for robust score merging:
+        final_score = alpha * rrf_vector + (1 - alpha) * rrf_bm25
         """
         k = k or settings.RETRIEVAL_TOP_K
         fetch_k = k * 3  # fetch more candidates for fusion
@@ -131,34 +137,27 @@ class HybridSearch:
         vector_results = self._vector_search(query, fetch_k)
         bm25_results = self._bm25_search(query, fetch_k)
 
-        # Merge results by chunk_id
-        score_map: dict[str, dict] = {}
+        # Build RRF rank maps (chunk_id -> rank position, 1-indexed)
+        vector_ranks = {r.chunk_id: i + 1 for i, r in enumerate(vector_results)}
+        bm25_ranks = {r.chunk_id: i + 1 for i, r in enumerate(bm25_results)}
 
+        # Collect all chunk data
+        chunk_data: dict[str, dict] = {}
         for r in vector_results:
-            score_map[r.chunk_id] = {
-                "text": r.text,
-                "metadata": r.metadata,
-                "vector_score": r.score,
-                "bm25_score": 0.0,
-            }
-
+            chunk_data[r.chunk_id] = {"text": r.text, "metadata": r.metadata}
         for r in bm25_results:
-            if r.chunk_id in score_map:
-                score_map[r.chunk_id]["bm25_score"] = r.score
-            else:
-                score_map[r.chunk_id] = {
-                    "text": r.text,
-                    "metadata": r.metadata,
-                    "vector_score": 0.0,
-                    "bm25_score": r.score,
-                }
+            if r.chunk_id not in chunk_data:
+                chunk_data[r.chunk_id] = {"text": r.text, "metadata": r.metadata}
 
-        # Calculate combined scores
+        # Calculate RRF combined scores
+        default_rank = fetch_k + 1  # penalty rank for missing results
         combined: list[SearchResult] = []
-        for chunk_id, data in score_map.items():
+        for chunk_id, data in chunk_data.items():
+            v_rank = vector_ranks.get(chunk_id, default_rank)
+            b_rank = bm25_ranks.get(chunk_id, default_rank)
             final_score = (
-                self.alpha * data["vector_score"]
-                + (1 - self.alpha) * data["bm25_score"]
+                self.alpha * self._rrf_score(v_rank)
+                + (1 - self.alpha) * self._rrf_score(b_rank)
             )
             combined.append(
                 SearchResult(

@@ -9,13 +9,35 @@ from loguru import logger
 from config.settings import settings
 from src.ingestion.chunking import ChunkedDocument
 
+# Instruction prefixes improve retrieval quality by telling the model
+# what the text will be used for. While OpenAI embeddings don't require
+# instructions like E5/BGE models, prepending context still helps
+# differentiate query vs document embeddings in practice.
+QUERY_PREFIX = "Represent this legal question for retrieving relevant contract clauses: "
+DOCUMENT_PREFIX = ""  # documents are embedded as-is
+
 
 def get_embedding_function() -> OpenAIEmbeddings:
-    """Create OpenAI embeddings function."""
+    """Create OpenAI embeddings function for document storage."""
     return OpenAIEmbeddings(
         model=settings.OPENAI_EMBEDDING_MODEL,
         openai_api_key=settings.OPENAI_API_KEY,
     )
+
+
+def get_query_embedding_function() -> OpenAIEmbeddings:
+    """Create OpenAI embeddings function for queries with instruction prefix."""
+    return _QueryPrefixEmbeddings(
+        model=settings.OPENAI_EMBEDDING_MODEL,
+        openai_api_key=settings.OPENAI_API_KEY,
+    )
+
+
+class _QueryPrefixEmbeddings(OpenAIEmbeddings):
+    """OpenAI embeddings that prepend an instruction prefix to queries."""
+
+    def embed_query(self, text: str) -> list[float]:
+        return super().embed_query(QUERY_PREFIX + text)
 
 
 def get_chroma_client() -> chromadb.ClientAPI:

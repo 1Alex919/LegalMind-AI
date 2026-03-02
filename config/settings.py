@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_CHAT_MODEL: str = "gpt-4o-mini"
-    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-large"
 
     # ChromaDB
     CHROMA_PERSIST_DIR: str = "./data/chroma_db"
@@ -21,13 +21,14 @@ class Settings(BaseSettings):
 
     # RAG Parameters
     CHUNK_SIZE: int = 512
-    CHUNK_OVERLAP: int = 50
-    RETRIEVAL_TOP_K: int = 5
-    HYBRID_ALPHA: float = 0.6  # weight for vector search (1 - alpha = BM25 weight)
+    CHUNK_OVERLAP: int = 192
+    RETRIEVAL_TOP_K: int = 20  # fetch many candidates, then rerank aggressively
+    HYBRID_ALPHA: float = 0.8  # weight for vector search (1 - alpha = BM25 weight)
 
     # Reranker
     RERANKER_MODEL: str = "rank-T5-flan"
-    RERANKER_TOP_N: int = 3
+    RERANKER_TOP_N: int = 3  # keep only top 3 after reranking for high precision
+    RERANKER_SCORE_THRESHOLD: float = 0.05  # drop chunks below this reranker score
 
     # API
     API_HOST: str = "0.0.0.0"
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # Evaluation
-    RAGAS_JUDGE_MODEL: str = "gpt-4o-mini"
+    RAGAS_JUDGE_MODEL: str = "gpt-4o"
 
     # Ollama (optional fallback)
     OLLAMA_BASE_URL: str = "http://localhost:11434"

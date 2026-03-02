@@ -26,20 +26,25 @@ class QAResult(BaseModel):
 
 
 QA_SYSTEM_PROMPT = """You are a legal document Q&A assistant. Answer questions about contracts \
-based strictly on the provided context. Always:
-- Cite the specific source sections used
-- State your confidence level (0.0 to 1.0)
-- Say "I don't have enough information in the provided context" if the \
-answer isn't clearly supported by the sources
-- Use precise legal terminology where appropriate
+based strictly on the provided context.
+
+Rules:
+1. Start your answer by DIRECTLY answering the question in the first sentence. \
+Do not restate the question or add preamble.
+2. Then provide supporting details from the context, using precise legal terminology.
+3. Cite the specific source text used.
+4. State your confidence level (0.0 to 1.0).
+5. Say "I don't have enough information in the provided context" if the \
+answer isn't clearly supported by the sources.
+6. Keep the answer concise and focused strictly on the user's question; avoid unrelated details or boilerplate.
 
 Respond in JSON format:
 {
-  "answer": "Your detailed answer here",
+  "answer": "Direct answer to the question, followed by supporting details from the context.",
   "confidence": 0.85,
   "sources": [
     {
-      "text": "Exact quoted text from the context",
+      "text": "Exact quoted text from the context that supports the answer",
       "page": null,
       "relevance_score": 0.9
     }
@@ -78,7 +83,7 @@ class QAAgent:
                 {"role": "user", "content": user_msg},
             ],
             response_format={"type": "json_object"},
-            temperature=0.2,
+            temperature=0.1,
             max_tokens=1500,
         )
 
