@@ -31,8 +31,8 @@
       "context": "Each Party agrees: To take reasonable steps to protect the other Party\u2019s Confidential Information. These steps must be at least as protective as those we take to protect our own..."
     },
     {
-      "question": "Under what condition can Confidential Information be disclosed to third parties?",
-      "answer": "Confidential Information can be disclosed to third parties only to those employees who need the information for the purposes of the Agreement.",
+      "question": "Under what condition can Confidential Information be disclosed to third parties in the ordinary course of this Agreement?",
+      "answer": "Confidential Information can be disclosed to third parties only to those employees of a recipient who need the information for the purposes of the Agreement.",
       "context": "The Parties agree not to disclose the other\u2019s Confidential Information to third parties except to those employees of a recipient who are required to have the information for the purposes in this Agreement..."
     },
     {
@@ -61,8 +61,8 @@
       "context": "Each of us acknowledges that money damages may not be sufficient compensation for a breach of this Agreement..."
     },
     {
-      "question": "Can either Party transfer this Agreement?",
-      "answer": "If one Party transfers this Agreement, they cannot disclose the other\u2019s Confidential Information to the transferee without consent.",
+      "question": "If one Party transfers this Agreement, what restriction applies to disclosure of Confidential Information to the transferee?",
+      "answer": "If one Party transfers this Agreement, they may not disclose the other Party\u2019s Confidential Information to the transferee without the other Party\u2019s consent.",
       "context": "If one of us transfers this Agreement, we will not disclose the other\u2019s Confidential Information to the transferee without the other\u2019s consent."
     },
     {
@@ -87,8 +87,8 @@
     },
     {
       "question": "What must each Party do if they discover unauthorized use of Confidential Information?",
-      "answer": "Each Party must notify the other promptly upon discovery of any unauthorized use or disclosure of Confidential Information.",
-      "context": "Each Party agrees: To notify the other promptly upon discovery of any unauthorized use or disclosure of Confidential Information..."
+      "answer": "Each Party must notify the other promptly upon discovery of any unauthorized use or disclosure of Confidential Information and cooperate with the other Party to help regain control of the Confidential Information and prevent further unauthorized use or disclosure.",
+      "context": "Each Party agrees: To notify the other promptly upon discovery of any unauthorized use or disclosure of Confidential Information; and To cooperate with the other to help regain control of the Confidential Information and prevent further unauthorized use or disclosure of it."
     }
   ]
 }

@@ -15,7 +15,7 @@ from ragas.metrics import (
 )
 
 from config.settings import settings
-from src.evaluation.metrics import mean_reciprocal_rank, retrieval_hit_rate
+from src.evaluation.metrics import _is_match, mean_reciprocal_rank, retrieval_hit_rate
 
 
 def load_testset(path: str | Path) -> list[dict]:
@@ -106,6 +106,8 @@ def run_ragas_evaluation(
     scores = {}
     import math
 
+    per_sample_scores: list[dict] | None = None
+
     if isinstance(result, dict):
         result_dict = result
     elif hasattr(result, "scores"):
@@ -116,18 +118,21 @@ def run_ragas_evaluation(
             from collections import defaultdict
             agg = defaultdict(list)
             nan_counts: dict[str, int] = defaultdict(int)
+            per_sample_scores = []
             for i, row in enumerate(raw):
-                if isinstance(row, dict):
-                    for k, v in row.items():
-                        if isinstance(v, (int, float)):
-                            if math.isnan(v):
-                                nan_counts[k] += 1
-                                logger.warning(
-                                    f"Sample {i+1}: {k} = NaN "
-                                    f"(question: '{questions[i][:50]}...')"
-                                )
-                            else:
-                                agg[k].append(v)
+                if not isinstance(row, dict):
+                    continue
+                per_sample_scores.append(row)
+                for k, v in row.items():
+                    if isinstance(v, (int, float)):
+                        if math.isnan(v):
+                            nan_counts[k] += 1
+                            logger.warning(
+                                f"Sample {i+1}: {k} = NaN "
+                                f"(question: '{questions[i][:50]}...')"
+                            )
+                        else:
+                            agg[k].append(v)
             if nan_counts:
                 logger.warning(
                     f"NaN summary: {dict(nan_counts)} — "
@@ -152,6 +157,44 @@ def run_ragas_evaluation(
     scores["mrr"] = round(mean_reciprocal_rank(contexts, gt_ctx), 4)
 
     logger.info(f"RAGAS results: {scores}")
+
+    # Per-sample diagnostics dump for deeper analysis
+    try:
+        diagnostics_dir = settings.DATA_DIR / "synthetic_eval"
+        diagnostics_dir.mkdir(parents=True, exist_ok=True)
+        per_sample_path = diagnostics_dir / "per_sample.jsonl"
+
+        with per_sample_path.open("w", encoding="utf-8") as f:
+            for idx, (q, a, ctx_list, gt_ans, gt_c) in enumerate(
+                zip(questions, answers, contexts, ground_truths, gt_ctx)
+            ):
+                first_match_rank: int | None = None
+                has_match = False
+                for rank, chunk in enumerate(ctx_list, 1):
+                    if _is_match(chunk, gt_c or gt_ans, threshold=0.3):
+                        first_match_rank = rank
+                        has_match = True
+                        break
+
+                row: dict = {
+                    "index": idx,
+                    "question": q,
+                    "answer": a,
+                    "ground_truth_answer": gt_ans,
+                    "ground_truth_context": gt_c,
+                    "retrieved_contexts": ctx_list,
+                    "first_match_rank": first_match_rank,
+                    "has_match": has_match,
+                }
+
+                if per_sample_scores and idx < len(per_sample_scores):
+                    row["ragas"] = per_sample_scores[idx]
+
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        logger.info(f"Per-sample diagnostics written to {per_sample_path}")
+    except Exception as e:  # pragma: no cover - diagnostics should not break eval
+        logger.warning(f"Failed to write per-sample diagnostics: {e}")
 
     if output_path:
         path = Path(output_path)

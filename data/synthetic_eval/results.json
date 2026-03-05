@@ -1,8 +1,8 @@
 {
-  "faithfulness": 0.9333,
-  "answer_relevancy": 0.7306,
-  "context_precision": 0.3148,
-  "context_recall": 0.6111,
-  "hit_rate": 0.6667,
-  "mrr": 0.3796
+  "faithfulness": 1.0,
+  "answer_relevancy": 0.616,
+  "context_precision": 0.3889,
+  "context_recall": 0.5278,
+  "hit_rate": 0.5556,
+  "mrr": 0.4815
 }

@@ -186,8 +186,8 @@ The retrieval pipeline uses a hybrid approach for maximum relevance:
 
 1. **Cross-Language Translation** (automatic) — Detects query/document language mismatch and translates queries for accurate retrieval
 2. **Query Expansion** (HyDE + multi-query, both enabled by default) — HyDE generates hypothetical contract clauses for better semantic matching; multi-query generates 3 alternative phrasings. Results from all queries are fused via **cross-query RRF** so chunks found by multiple query variations get boosted
-3. **Hybrid Search** — BM25 keyword search + ChromaDB vector search with instruction-prefixed query embeddings, combined via Reciprocal Rank Fusion (RRF) with configurable alpha weighting (80/20 vector/BM25)
-4. **Reranking** — FlashRank aggressively reranks top 20 candidates down to top 3 for high precision; chunks below score threshold (0.05) are dropped
+3. **Hybrid Search** — BM25 keyword search + ChromaDB vector search with instruction-prefixed query embeddings, combined via Reciprocal Rank Fusion (RRF) with configurable alpha weighting (70/30 vector/BM25)
+4. **Reranking** — FlashRank aggressively reranks top 20 candidates down to top 5 for high precision; chunks below score threshold (0.05) are dropped
 5. **Parent Document Retrieval** — Child chunks mapped back to parent chunks for richer context
 
 ### Chunking Strategy
@@ -234,12 +234,12 @@ Quality metrics measured with RAGAS (gpt-4o as judge, with exponential backoff f
 
 | Metric             | Score  | Target | Description                        |
 |--------------------|--------|--------|------------------------------------|
-| Faithfulness       | 0.9333 | > 0.80 | Is the answer grounded in sources? |
-| Answer Relevancy   | 0.7306 | > 0.80 | Does it answer the question?       |
-| Context Precision  | 0.3148 | > 0.80 | Are retrieved chunks relevant?     |
-| Context Recall     | 0.6111 | > 0.80 | Were all relevant chunks found?    |
-| Hit Rate           | 0.6667 | > 0.80 | Does correct context appear?       |
-| MRR                | 0.3796 | > 0.70 | Rank of first relevant result      |
+| Faithfulness       | 1.0000 | > 0.80 | Is the answer grounded in sources? |
+| Answer Relevancy   | 0.6160 | > 0.80 | Does it answer the question?       |
+| Context Precision  | 0.3889 | > 0.80 | Are retrieved chunks relevant?     |
+| Context Recall     | 0.5278 | > 0.80 | Were all relevant chunks found?    |
+| Hit Rate           | 0.5556 | > 0.80 | Does correct context appear?       |
+| MRR                | 0.4815 | > 0.70 | Rank of first relevant result      |
 
 ### Custom Metrics
 
@@ -266,9 +266,9 @@ All settings are managed via environment variables (`.env`) and Pydantic:
 | `CHUNK_SIZE`             | `512`                     | Child chunk size (chars)          |
 | `CHUNK_OVERLAP`          | `192`                     | Overlap between chunks (chars)    |
 | `RETRIEVAL_TOP_K`        | `20`                      | Candidates to retrieve before reranking |
-| `HYBRID_ALPHA`           | `0.8`                     | Vector search weight (RRF)        |
+| `HYBRID_ALPHA`           | `0.7`                     | Vector search weight (RRF)        |
 | `RERANKER_MODEL`         | `rank-T5-flan`            | FlashRank model                   |
-| `RERANKER_TOP_N`         | `3`                       | Results after reranking           |
+| `RERANKER_TOP_N`         | `5`                       | Results after reranking           |
 | `RERANKER_SCORE_THRESHOLD` | `0.05`                  | Drop chunks below this score      |
 
 See [.env.example](.env.example) for all options.

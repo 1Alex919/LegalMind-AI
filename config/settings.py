@@ -23,11 +23,11 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 512
     CHUNK_OVERLAP: int = 192
     RETRIEVAL_TOP_K: int = 20  # fetch many candidates, then rerank aggressively
-    HYBRID_ALPHA: float = 0.8  # weight for vector search (1 - alpha = BM25 weight)
+    HYBRID_ALPHA: float = 0.7  # weight for vector (0.3 BM25); higher BM25 helps legal keyword queries
 
     # Reranker
     RERANKER_MODEL: str = "rank-T5-flan"
-    RERANKER_TOP_N: int = 3  # keep only top 3 after reranking for high precision
+    RERANKER_TOP_N: int = 5  # keep top 5 after reranking (improves recall for multi-clause NDA)
     RERANKER_SCORE_THRESHOLD: float = 0.05  # drop chunks below this reranker score
 
     # API

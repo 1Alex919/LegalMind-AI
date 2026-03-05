@@ -1,5 +1,6 @@
 """Hybrid search combining BM25 (sparse) and vector (dense) search."""
 
+import re
 from dataclasses import dataclass
 
 import numpy as np
@@ -12,6 +13,13 @@ from src.ingestion.embeddings import (
     get_or_create_collection,
     get_query_embedding_function,
 )
+
+
+def _bm25_tokenize(text: str) -> list[str]:
+    """Tokenize for BM25: lowercase, strip punctuation, keep words 1+ chars.
+    Improves match for legal phrases like 'five years' vs 'five years.' """
+    tokens = re.findall(r"[a-z0-9]+", text.lower())
+    return [t for t in tokens if t]
 
 
 @dataclass
@@ -48,7 +56,7 @@ class HybridSearch:
         self._corpus_texts = all_docs["documents"]
         self._corpus_meta = all_docs["metadatas"]
 
-        tokenized = [doc.lower().split() for doc in self._corpus_texts]
+        tokenized = [_bm25_tokenize(doc) for doc in self._corpus_texts]
         self._bm25 = BM25Okapi(tokenized)
         logger.info(f"BM25 index built with {len(self._corpus_texts)} documents")
 
@@ -69,7 +77,7 @@ class HybridSearch:
         if self._bm25 is None:
             return []
 
-        tokenized_query = query.lower().split()
+        tokenized_query = _bm25_tokenize(query)
         raw_scores = self._bm25.get_scores(tokenized_query)
         top_indices = np.argsort(raw_scores)[::-1][:k]
 
@@ -130,7 +138,7 @@ class HybridSearch:
         final_score = alpha * rrf_vector + (1 - alpha) * rrf_bm25
         """
         k = k or settings.RETRIEVAL_TOP_K
-        fetch_k = k * 3  # fetch more candidates for fusion
+        fetch_k = k * 4  # fetch more candidates for RRF (helps recall on legal keywords)
 
         logger.info(f"Hybrid search: '{query[:60]}...' (k={k})")
 
